@@ -41,8 +41,7 @@ def upload_to_nightscout(treatments, session, settings) :
     print(f'Uploading {len(treatments)} treatments to nightscout')
     url = f'{settings["nightscout"]["URL"]}/api/v1/treatments'
     req = session.post(url, json=treatments, headers=nightscout_headers(settings), allow_redirects=True)
-    # print(req.text)
-    return req.status_code
+    return req.status_code, req.text
 
 
 def bg_check(glucose, created_at, glucoseType='Finger', _id=None):
@@ -63,14 +62,17 @@ def meal_bolus(insulin, glucose, glucoseType, carbs, created_at, _id=None):
     data = dict(
         eventType = 'Meal Bolus',
         insulin = insulin,
-        glucose = glucose,
-        glucoseType = glucoseType, # 'Finger' or 'Sensor'
-        units = 'mmol',
         carbs = carbs,
         created_at = created_at.isoformat().replace("+00:00", "Z"),
         enteredBy = MY_ID,
         #prebolus = 15, # minutes
     )
+    if glucose:
+        data.update(
+            glucose = glucose,
+            glucoseType = glucoseType, # 'Finger' or 'Sensor'
+            units = 'mmol',
+        )
     if _id:
         data['_id'] = _id
     return data
@@ -336,6 +338,22 @@ def transformLogs(logs, settings):
             )
             treatments.append(treatment)
 
+        elif len(entry_group) == 2 and types == set(['Carbohydrates', 'Bolus']):
+            # meal bolus without glucose reading
+            print('meal bolus without glucose reading')
+            carbs = find_entry('Carbohydrates', entry_group)
+            bolus = find_entry('Bolus', entry_group)
+
+            treatment = meal_bolus(
+                insulin=parse_bolus(bolus['value']),
+                carbs=parse_carbs(carbs['value']),
+                glucose=None,
+                glucoseType=None,
+                created_at=bolus['datetime'],
+                _id=bolus['id']
+            )
+            treatments.append(treatment)
+
         elif len(entry_group) == 2 and (types == set(['Carbohydrates', 'Blood glucose']) or types == set(['Carbohydrates', 'Blood glucose manual entry'])):
             # carb correction
             print('carb correction')
@@ -393,7 +411,10 @@ def run():
     save_session(session)
 
     treatments = transformLogs(logs, settings)
-    status = upload_to_nightscout(treatments, session, settings)
+    status, response = upload_to_nightscout(treatments, session, settings)
+    if status != 200:
+        print(treatments)
+        print(response)
     print(status)
 
 if __name__ == '__main__':
