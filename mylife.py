@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 MY_ID = 'mylife uploader'
 SETTINGS_TOML = 'settings.env'
 BASE_URL = 'https://uk.mylife-software.net/'
-
+SET_ID = False
 
 def nightscout_headers(settings) :
     return {
@@ -53,7 +53,7 @@ def bg_check(glucose, created_at, glucoseType='Finger', _id=None):
         created_at = created_at.isoformat().replace("+00:00", "Z"),
         enteredBy = MY_ID,
     )
-    if _id:
+    if _id and SET_ID:
         data['_id'] = _id
     return data
 
@@ -73,7 +73,7 @@ def meal_bolus(insulin, glucose, glucoseType, carbs, created_at, _id=None):
             glucoseType = glucoseType, # 'Finger' or 'Sensor'
             units = 'mmol',
         )
-    if _id:
+    if _id and SET_ID:
         data['_id'] = _id
     return data
 
@@ -88,7 +88,7 @@ def correction_bolus(insulin, glucose, glucoseType, created_at, _id=None):
         created_at = created_at.isoformat().replace("+00:00", "Z"),
         enteredBy = MY_ID,
     )
-    if _id:
+    if _id and SET_ID:
         data['_id'] = _id
     return data
 
@@ -106,7 +106,7 @@ def correction_carbs(carbs, created_at, glucose=None, glucoseType='Finger', _id=
             glucoseType = glucoseType, # 'Finger' or 'Sensor'
             units = 'mmol',
         )
-    if _id:
+    if _id and SET_ID:
         data['_id'] = _id
     return data
 
