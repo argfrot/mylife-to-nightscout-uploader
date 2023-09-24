@@ -82,12 +82,15 @@ def correction_bolus(insulin, glucose, glucoseType, created_at, _id=None):
     data = dict(
         eventType = 'Correction Bolus',
         insulin = insulin,
-        glucose = glucose,
-        glucoseType = glucoseType, # 'Finger' or 'Sensor'
-        units = 'mmol',
         created_at = created_at.isoformat().replace("+00:00", "Z"),
         enteredBy = MY_ID,
     )
+    if glucose:
+        data.update(
+            glucose = glucose,
+            glucoseType = glucoseType, # 'Finger' or 'Sensor'
+            units = 'mmol',
+        )
     if _id and SET_ID:
         data['_id'] = _id
     return data
@@ -392,6 +395,22 @@ def transformLogs(logs, settings):
                     _id=bg['id']
                 )
                 treatments.append(treatment)
+
+        elif types == set(['Bolus']):
+            # correction bolus by eyeball
+            print('correction bolus')
+            for bolus in entry_group:
+                bolus = find_entry('Bolus', entry_group)
+
+                treatment = correction_bolus(
+                    insulin=parse_bolus(bolus['value']),
+                    glucose=None,
+                    glucoseType=None,
+                    created_at=bolus['datetime'],
+                    _id=bolus['id']
+                )
+                treatments.append(treatment)
+
         else:
             print(f'UNKNOWN TREATMENT: {types}')
 
