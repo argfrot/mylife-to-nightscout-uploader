@@ -287,8 +287,8 @@ def transformLogs(logs, settings):
         # print(types)
         # print(len(entry_group))
         
-        if ((len(entry_group) == 4 and types == set(['Bolus', 'Blood glucose', 'Blood glucose manual entry', 'Carbohydrates'])) or
-           (len(entry_group) == 3 and types == set(['Bolus', 'Blood glucose', 'Carbohydrates']))):
+        if ((len(entry_group) >= 4 and types == set(['Bolus', 'Blood glucose', 'Blood glucose manual entry', 'Carbohydrates'])) or
+           (len(entry_group) >= 3 and types == set(['Bolus', 'Blood glucose', 'Carbohydrates']))):
             # meal bolus with finger prick
             print('meal bolus with finger prick')
             bolus = find_entry('Bolus', entry_group)
