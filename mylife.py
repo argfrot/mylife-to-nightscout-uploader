@@ -13,7 +13,7 @@ SETTINGS_TOML = 'settings.env'
 BASE_URL = 'https://uk.mylife-software.net/'
 SET_ID = False
 
-def nightscout_headers(settings) :
+def nightscout_headers(settings):
     return {
         'api-secret': settings['nightscout']['API_SECRET'],
         'User-Agent': MY_ID,
@@ -21,7 +21,7 @@ def nightscout_headers(settings) :
         'Accept': 'application/json'
     }
 
-def nightscout_last_treatment_time_ms(session, settings) :
+def nightscout_last_treatment_time_ms(session, settings):
     url = f'{settings["nightscout"]["URL"]}/api/v1/treatments?count=1'
     req = session.get(
         url,
@@ -30,14 +30,14 @@ def nightscout_last_treatment_time_ms(session, settings) :
     )
     if req.ok and req.text:
         resp = json.loads(req.text)
-        if resp:
+        if resp and len(resp) and 'mills' in resp[0]:
             return resp[0]['mills']
 
     return None
 
-def upload_to_nightscout(treatments, session, settings) :
+def upload_to_nightscout(treatments, session, settings):
     if not treatments:
-        return
+        return None, "No treatments found to upload"
     print(f'Uploading {len(treatments)} treatments to nightscout')
     url = f'{settings["nightscout"]["URL"]}/api/v1/treatments'
     req = session.post(url, json=treatments, headers=nightscout_headers(settings), allow_redirects=True)
@@ -177,10 +177,15 @@ def load_session(session):
 def login(session, settings):
     login_form = session.get(BASE_URL)
     soup = BeautifulSoup(login_form.text, 'lxml')
+    ev = soup.find(id='__EVENTVALIDATION').get('value')
+    vs = soup.find(id='__VIEWSTATE').get('value')
+    vsg = soup.find(id='__VIEWSTATEGENERATOR').get('value')
+    rvt = soup.find(attrs={'name':'__RequestVerificationToken'}).get('value')
     login_data = {
-        '__EVENTVALIDATION': soup.find(id='__EVENTVALIDATION').get('value'),
-        '__VIEWSTATE': soup.find(id='__VIEWSTATE').get('value'),
-        '__VIEWSTATEGENERATOR': soup.find(id='__VIEWSTATEGENERATOR').get('value'),
+        '__EVENTVALIDATION': ev,
+        '__VIEWSTATE': vs,
+        '__VIEWSTATEGENERATOR': vsg,
+        '__RequestVerificationToken': rvt,
         'ctl00$conContent$UserLogin$lgnMylifeLogin$UserName': settings['mylife']['EMAIL'],
         'ctl00$conContent$UserLogin$lgnMylifeLogin$Password': settings['mylife']['PASSWORD'],
         'ctl00$conContent$UserLogin$lgnMylifeLogin$LoginButton': 'Log in',
